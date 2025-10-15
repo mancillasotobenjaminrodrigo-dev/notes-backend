@@ -1,7 +1,6 @@
 import os
 from dotenv import load_dotenv
 
-# Carga el archivo .env.local
 load_dotenv(".env.local")
 
 class Settings:
