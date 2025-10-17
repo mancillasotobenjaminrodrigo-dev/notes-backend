@@ -12,3 +12,7 @@ class Note(BaseModel):
 class CreatedNote(BaseModel):
     title: str
     content: str
+
+class UpdateNote(BaseModel):
+    title: Optional[str] = None
+    content : Optional[str] = None
