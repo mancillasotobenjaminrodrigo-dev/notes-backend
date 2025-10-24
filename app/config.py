@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv(".env.local")
+#load_dotenv(".env.local")
 
 class Settings:
     GCP_PROJECT_ID: str = os.getenv("GCP_PROJECT_ID")
