@@ -1,0 +1,10 @@
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Credenciales
+.env.local
+
+# comentar sensitive/ en desarrollo local con docker
+sensitive/

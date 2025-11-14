@@ -1,0 +1,77 @@
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  # Paso 0: Instalar dependencias necesarias y ejecutar los tests
+  - name: "python:3.10-slim"
+    entrypoint: "bash"
+    args:
+      - '-c'
+      - |
+        apt-get update && apt-get install -y gcc libpq-dev make && apt-get clean
+        python -m venv /env
+        . /env/bin/activate
+        pip install --upgrade pip
+        make install-test
+        make test
+
+  # Paso 1: Autenticar con Artifact Registry
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud auth configure-docker us-central1-docker.pkg.dev
+
+  # Paso 2: Construir la Imagen de Docker
+  - name: 'gcr.io/cloud-builders/docker'
+    args: 
+      [
+        'build',
+        '--no-cache',
+        '-t',
+        'us-central1-docker.pkg.dev/notes-app-456603/notes-backend-artifact-repo/notes-backend:$COMMIT_SHA',
+        '.'
+      ]
+
+  # Paso 3: Subir la Imagen al Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: 
+      [
+        'push',
+        'us-central1-docker.pkg.dev/notes-app-456603/notes-backend-artifact-repo/notes-backend:$COMMIT_SHA',
+      ]
+
+  # Paso 4: Desplegar la imagen en Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
+    args: 
+      [
+        'gcloud',
+        'run',
+        'deploy',
+        'notes-backend-service',
+        '--image',
+        'us-central1-docker.pkg.dev/notes-app-456603/notes-backend-artifact-repo/notes-backend:$COMMIT_SHA',
+        '--platform',
+        'managed',
+        '--region',
+        'us-central1',
+        '--ingress',
+        'all',
+        '--no-allow-unauthenticated',
+        '--cpu',
+        '1',
+        '--memory',
+        '1Gi',
+        '--min-instances',
+        '0',
+        '--max-instances',
+        '3',
+        '--service-account',
+        'notes-backend-sa',
+        '--update-secrets',
+        'GCP_PROJECT_ID=GCP_PROJECT_ID:latest,FIRESTORE_DATABASE_ID=FIRESTORE_DATABASE_ID:latest,GEMINI_GOOGLE_API_KEY=GEMINI_GOOGLE_API_KEY:latest',
+      ]
+
+images:
+  - 'us-central1-docker.pkg.dev/notes-app-456603/notes-backend-artifact-repo/notes-backend:$COMMIT_SHA'
